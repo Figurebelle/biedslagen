@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Bied & Slagen — Scorekeeper (v4)</title>
+  <title>Chinees Poepen — Scorekeeper (v6)</title>
   <style>
     :root{--bg:#f6f8fa;--card:#fff;--line:#e5e7eb;--text:#111;--muted:#6b7280;--accent:#0d6efd;--ok:#198754;--bad:#dc3545;}
     *{box-sizing:border-box}
@@ -11,10 +11,10 @@
     header{position:sticky;top:0;background:var(--card);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;gap:8px;align-items:center}
     h1{margin:0;font-size:18px}
     #jsStatus{margin-left:auto;font-size:12px;color:var(--muted)}
-    main{max-width:960px;margin:0 auto;padding:16px}
+    main{max-width:1000px;margin:0 auto;padding:16px}
     .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
     label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
-    textarea,input,select{width:100%;padding:10px 12px;border:1px solid #d0d7de;border-radius:8px;font-size:16px;background:#fff}
+    textarea,input{width:100%;padding:10px 12px;border:1px solid #d0d7de;border-radius:8px;font-size:16px;background:#fff}
     input[type=number]{-moz-appearance:textfield}
     input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
     button{appearance:none;border:0;border-radius:10px;padding:10px 14px;font-size:16px;background:var(--accent);color:#fff;cursor:pointer}
@@ -26,19 +26,18 @@
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
     .muted{color:var(--muted);font-size:13px}
     .pill{display:inline-block;padding:4px 10px;border-radius:999px;background:#eef2ff}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left}
-    th{font-size:12px;color:var(--muted);font-weight:600}
-    .suits{display:flex;gap:8px;flex-wrap:wrap}
-    .suit{padding:8px 10px;border:1px solid #d0d7de;border-radius:8px;background:#fff;cursor:pointer}
-    .suit.active{outline:2px solid var(--accent)}
     .footer-space{height:40px}
-    .error{color:var(--bad);font-size:13px;margin-top:6px;display:none}
+    .columns{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+    .colCard{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff}
+    .big{font-size:28px;font-weight:700}
+    .list{margin-top:8px;max-height:220px;overflow:auto;border-top:1px dashed var(--line);padding-top:6px}
+    .list div{font-size:13px;color:#333}
+    .hint{font-size:12px;color:#555;margin-top:6px}
   </style>
 </head>
 <body>
   <header>
-    <h1>Bied &amp; Slagen — Scorekeeper</h1>
+    <h1>Chinees Poepen — Scorekeeper</h1>
     <div id="jsStatus">JS init…</div>
   </header>
   <main>
@@ -46,56 +45,41 @@
     <section id="step1" class="card">
       <h2 style="margin:0 0 8px">Stap 1 — Spelers ingeven</h2>
       <p class="muted">Zet <strong>1 naam per regel</strong> (minstens 2 spelers).</p>
-      <textarea id="playersInput" rows="6" placeholder="vb.&#10;Anna&#10;Bram&#10;Cem&#10;Dorien"></textarea>
-      <div class="error" id="namesError">Minstens 2 spelers nodig.</div>
+      <textarea id="playersInput" rows="6" placeholder="vb.&#10;Anna&#10;Bram&#10;Cem"></textarea>
+      <div id="namesError" class="hint" style="display:none;color:#dc3545">Minstens 2 spelers nodig.</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px">
-        <button id="toStep2" disabled>Verder naar Stap 2</button>
+        <button id="toStep2">Verder naar Stap 2</button>
         <button id="loadBtn" class="secondary">Vorige sessie laden</button>
       </div>
-      <p class="muted" style="margin-top:8px">Tip: open dit bestand in <strong>Safari/Chrome</strong>. In een reader-app (PocketBook) werkt de knop niet.</p>
+      <p class="muted" style="margin-top:8px">Tip: open dit bestand in <strong>Safari/Chrome</strong>. In een reader-app werkt de knop niet.</p>
+      <div class="hint" id="debug1"></div>
     </section>
 
     <!-- STEP 2 -->
     <section id="step2" class="card" style="display:none">
       <div class="row" style="align-items:baseline">
         <div>
-          <h2 style="margin:0 0 4px">Stap 2 — Ronde &amp; Biedingen</h2>
+          <h2 style="margin:0 0 4px">Stap 2 — Biedingen</h2>
           <div class="muted">Ronde <span id="roundNo">1</span>/<span id="roundTotal">12</span> • <span class="pill"><span id="cardsThisRound">2</span> kaarten</span></div>
           <div class="muted" style="margin-top:6px">Vaste reeks: 2,3,4,5,6,7,7,6,5,4,3,2</div>
-        </div>
-        <div>
-          <label>Troef</label>
-          <div class="suits">
-            <button class="suit" data-suit="♠">♠</button>
-            <button class="suit" data-suit="♥">♥</button>
-            <button class="suit" data-suit="♦">♦</button>
-            <button class="suit" data-suit="♣">♣</button>
-            <button class="suit" data-suit="NT">Sans Atout (NT)</button>
-            <button id="drawTrump" class="secondary">Draai troef</button>
-          </div>
         </div>
       </div>
 
       <div class="card" style="margin-top:12px">
         <h3 style="margin:0 0 8px">Biedingen per speler</h3>
         <div id="bids" class="grid"></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
-          <div class="muted">Iedereen vult exact in hoeveel slagen hij denkt te halen.</div>
-          <button id="lockBids" class="secondary">Biedingen vastzetten</button>
+        <div style="display:flex;justify-content:flex-end;align-items:center;margin-top:8px">
+          <button id="toStep3" class="ok">Verder naar Stap 3 (biedingen vastzetten)</button>
         </div>
-      </div>
-
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button id="toStep3" class="ok" disabled>Verder naar Stap 3</button>
-        <button id="saveBtn" class="secondary">Opslaan</button>
       </div>
     </section>
 
     <!-- STEP 3 -->
     <section id="step3" class="card" style="display:none">
       <h2 style="margin:0 0 8px">Stap 3 — Effectieve slagen &amp; score</h2>
-      <p class="muted">Vul voor elke speler het <em>daadwerkelijk</em> aantal slagen in.</p>
-      <div id="results" class="grid"></div>
+      <p class="muted">Bekijk eerst de biedingen (informatief) en vul daarna de <em>daadwerkelijke</em> slagen in.</p>
+      <div id="bidsInfo" class="card" style="background:#fcfcfd"></div>
+      <div id="results" class="grid" style="margin-top:12px"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
         <button id="applyScore" class="ok">Score toepassen</button>
         <button id="backToStep2" class="secondary">Terug naar biedingen</button>
@@ -105,7 +89,7 @@
     <!-- SCOREBOARD + HISTORY -->
     <section class="card" id="scoreArea" style="display:none">
       <h2 style="margin:0 0 8px">Scorebord</h2>
-      <div id="scoreboard"></div>
+      <div id="scoreboard" class="columns"></div>
       <h3 style="margin:16px 0 8px">Historiek</h3>
       <div id="history" class="muted" style="border:1px dashed var(--line);border-radius:8px;padding:8px;max-height:220px;overflow:auto"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
@@ -119,52 +103,23 @@
   </main>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  // JS status
+(function(){
   const jsStatus = document.getElementById('jsStatus');
   jsStatus.textContent = 'JS actief ✔️';
 
   const FIXED_ROUNDS = [2,3,4,5,6,7,7,6,5,4,3,2];
-  const state = {
-    players: [], rounds: FIXED_ROUNDS.slice(), current: 0,
-    trump: {}, bids: {}, results: {}, scores: {}
-  };
+  const state = { players: [], rounds: FIXED_ROUNDS.slice(), current: 0, bids: {}, results: {}, scores: {}, points: {} };
 
   const $ = (id)=>document.getElementById(id);
-  const save = ()=>{ try{ localStorage.setItem('biedslagen_v4', JSON.stringify(state)); }catch(e){} };
-  const load = ()=>{
-    try{
-      const raw = localStorage.getItem('biedslagen_v4');
-      if(!raw) { alert('Geen opgeslagen spel gevonden.'); return; }
-      const data = JSON.parse(raw);
-      Object.assign(state, data);
-      // show steps 2/score if already started
-      $('step1').style.display='none';
-      $('step2').style.display='block';
-      $('scoreArea').style.display='block';
-      renderAll();
-    }catch(e){ alert('Kon niet laden.'); }
-  };
-  const resetAll = ()=>{ try{ localStorage.removeItem('biedslagen_v4'); }catch(e){} location.reload(); };
+  const save = ()=>{ try{ localStorage.setItem('chinees_poepen_v6', JSON.stringify(state)); }catch(e){} };
+  const load = ()=>{ try{ const raw = localStorage.getItem('chinees_poepen_v6'); if(!raw){alert('Geen opgeslagen spel'); return;} Object.assign(state, JSON.parse(raw)); $('step1').style.display='none'; $('step2').style.display='block'; $('scoreArea').style.display='block'; renderAll(); }catch(e){ alert('Kon niet laden'); } };
+  const resetAll = ()=>{ try{ localStorage.removeItem('chinees_poepen_v6'); }catch(e){} location.reload(); };
 
-  // Step 1 logic
-  const namesInput = $('playersInput');
-  const toStep2 = $('toStep2');
-  const namesError = $('namesError');
-
-  function validateNames(){
-    const names = namesInput.value.split('\n').map(s=>s.trim()).filter(Boolean);
-    const ok = names.length >= 2;
-    toStep2.disabled = !ok;
-    namesError.style.display = ok ? 'none' : 'block';
-    return ok;
-  }
-  namesInput.addEventListener('input', validateNames);
-  validateNames();
-
-  toStep2.addEventListener('click', () => {
-    if(!validateNames()) return;
-    const names = namesInput.value.split('\n').map(s=>s.trim()).filter(Boolean);
+  $('toStep2').addEventListener('click', () => {
+    const names = $('playersInput').value.split('\n').map(s=>s.trim()).filter(Boolean);
+    $('debug1').textContent = 'Ingevoerde namen: ' + names.join(', ');
+    if(names.length < 2){ $('namesError').style.display = 'block'; return; }
+    $('namesError').style.display = 'none';
     state.players = names;
     state.scores = Object.fromEntries(names.map(n=>[n,0]));
     save();
@@ -173,50 +128,25 @@ document.addEventListener('DOMContentLoaded', () => {
     $('scoreArea').style.display='block';
     renderAll();
   });
-
   $('loadBtn').addEventListener('click', load);
 
-  // Step 2
   function renderStep2(){
     $('roundNo').textContent = state.current+1;
     $('roundTotal').textContent = state.rounds.length;
     const cards = state.rounds[state.current];
     $('cardsThisRound').textContent = cards;
 
-    // suits
-    const suitBtns = document.querySelectorAll('.suit');
-    suitBtns.forEach(b=>{
-      b.classList.toggle('active', state.trump[state.current] === b.dataset.suit);
-      b.onclick = ()=>{
-        state.trump[state.current] = b.dataset.suit;
-        suitBtns.forEach(x=>x.classList.remove('active'));
-        b.classList.add('active');
-        save();
-      };
-    });
-    $('drawTrump').onclick = ()=>{
-      const suits = ['♠','♥','♦','♣','NT'];
-      const pick = suits[Math.floor(Math.random()*suits.length)];
-      state.trump[state.current] = pick;
-      suitBtns.forEach(x=>x.classList.toggle('active', x.dataset.suit===pick));
-      save();
-    };
-
-    // bids UI
     const wrap = $('bids');
     wrap.innerHTML = '';
     const existing = state.bids[state.current] || {};
     for(const p of state.players){
       const val = (existing[p] ?? '');
       const box = document.createElement('div');
-      box.innerHTML = `
-        <label>${p} — Bieding</label>
-        <input class="bid" type="number" min="0" max="${cards}" step="1" value="${val}" data-player="${p}" />
-      `;
+      box.innerHTML = `<label>${p} — Bieding</label><input class="bid" type="number" min="0" max="${cards}" value="${val}" data-player="${p}" />`;
       wrap.appendChild(box);
     }
 
-    $('lockBids').onclick = () => {
+    $('toStep3').onclick = () => {
       const inputs = wrap.querySelectorAll('.bid');
       const bids = {};
       for(const inp of inputs){
@@ -226,25 +156,24 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       state.bids[state.current] = bids;
       save();
-      $('toStep3').disabled = false;
+      $('step2').style.display='none';
+      $('step3').style.display='block';
+      renderStep3();
     };
-
-    $('saveBtn').onclick = save;
   }
 
-  // Step 3
   function renderStep3(){
     const cards = state.rounds[state.current];
+    const b = state.bids[state.current] || {};
+    $('bidsInfo').innerHTML = `<strong>Biedingen (Ronde ${state.current+1}, ${cards} kaarten):</strong><div class="muted">${state.players.map(p => p+': '+(b[p]??'-')).join(' · ')}</div>`;
+
     const wrap = $('results');
     wrap.innerHTML = '';
     const existing = state.results[state.current] || {};
     for(const p of state.players){
       const val = (existing[p] ?? '');
       const box = document.createElement('div');
-      box.innerHTML = `
-        <label>${p} — Effectieve slagen</label>
-        <input class="res" type="number" min="0" max="${cards}" step="1" value="${val}" data-player="${p}" />
-      `;
+      box.innerHTML = `<label>${p} — Effectieve slagen</label><input class="res" type="number" min="0" max="${cards}" value="${val}" data-player="${p}" />`;
       wrap.appendChild(box);
     }
 
@@ -253,81 +182,59 @@ document.addEventListener('DOMContentLoaded', () => {
       const results = {};
       for(const inp of inputs){
         const v = parseInt(inp.value,10);
-        if(isNaN(v) || v<0 || v>cards){ alert('Ongeldig resultaat bij '+inp.dataset.player); return; }
+        if(isNaN(v)||v<0||v>cards){ alert('Ongeldig resultaat bij '+inp.dataset.player); return; }
         results[inp.dataset.player] = v;
       }
       state.results[state.current] = results;
 
       const bids = state.bids[state.current] || {};
+      const r = state.current;
+      state.points[r] = state.points[r] || {};
       for(const p of state.players){
-        const bid = bids[p] ?? 0;
-        const got = results[p] ?? 0;
-        const delta = (bid === got) ? 10 : -bid;
-        state.scores[p] = (state.scores[p]||0) + delta;
+        const bid = bids[p]??0, got=results[p]??0;
+        const pts = (bid===got)?10:-bid;
+        state.points[r][p]=pts;
+        state.scores[p]=(state.scores[p]||0)+pts;
       }
       save();
-      renderScoreboard();
-      renderHistory();
-      $('nextRound').style.display = (state.current < state.rounds.length - 1) ? 'inline-block' : 'none';
+      renderScoreboard(); renderHistory();
+      $('nextRound').style.display=(state.current<state.rounds.length-1)?'inline-block':'none';
       alert('Score toegepast.');
     };
 
-    $('backToStep2').onclick = ()=>{
-      $('step3').style.display='none';
-      $('step2').style.display='block';
-    };
+    $('backToStep2').onclick=()=>{ $('step3').style.display='none'; $('step2').style.display='block'; };
   }
 
-  // Scoreboard & history
   function renderScoreboard(){
-    const entries = Object.entries(state.scores).sort((a,b)=>b[1]-a[1]);
-    let html = '<table><thead><tr><th>Speler</th><th>Score</th></tr></thead><tbody>';
-    for(const [p,s] of entries){ html += `<tr><td>${p}</td><td>${s}</td></tr>`; }
-    html += '</tbody></table>';
-    $('scoreboard').innerHTML = html;
-  }
-  function renderHistory(){
-    const out = [];
-    for(let r=0;r<state.rounds.length;r++){
-      if(!state.bids[r] && !state.results[r]) continue;
-      const cards = state.rounds[r];
-      const t = state.trump[r] || '—';
-      out.push(`<div><strong>Ronde ${r+1}</strong> • ${cards} kaarten • Troef: ${t}</div>`);
-      if(state.bids[r]) out.push(`<div class="muted">Biedingen: ${Object.entries(state.bids[r]).map(([p,v])=>`${p}:${v}`).join(' · ')}</div>`);
-      if(state.results[r]) out.push(`<div class="muted">Resultaat: ${Object.entries(state.results[r]).map(([p,v])=>`${p}:${v}`).join(' · ')}</div>`);
-      out.push('<hr style="border:none;border-top:1px dashed var(--line);margin:6px 0">');
+    const container=$('scoreboard'); container.innerHTML='';
+    for(const p of state.players){
+      const total=state.scores[p]||0;
+      const list=[]; for(let r=0;r<state.rounds.length;r++){ const pts=state.points[r]?.[p]; if(pts!==undefined) list.push(`<div>R${r+1}: ${pts>0?'+':''}${pts}</div>`); }
+      const card=document.createElement('div'); card.className='colCard';
+      card.innerHTML=`<div style="font-weight:600">${p}</div><div class="big">${total}</div><div class="list">${list.join('')||'<div class="muted">Nog geen scores</div>'}</div>`;
+      container.appendChild(card);
     }
-    $('history').innerHTML = out.join('\n');
   }
 
-  // Navigation
-  $('toStep3').addEventListener('click', ()=>{
-    if(!state.bids[state.current]){ alert('Zet eerst alle biedingen vast.'); return; }
-    $('step2').style.display='none';
-    $('step3').style.display='block';
-    renderStep3();
-  });
-  $('nextRound').addEventListener('click', ()=>{
-    if(state.current >= state.rounds.length-1){ alert('Spel afgelopen!'); return; }
-    state.current += 1;
-    save();
-    $('step3').style.display='none';
-    $('step2').style.display='block';
-    renderAll();
-  });
-  $('exportBtn').addEventListener('click', ()=>{
-    const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'biedslagen_export.json'; a.click();
-    URL.revokeObjectURL(url);
-  });
-  $('resetBtn').addEventListener('click', ()=>{
-    if(confirm('Nieuw spel starten?')) resetAll();
-  });
+  function renderHistory(){
+    const out=[]; for(let r=0;r<state.rounds.length;r++){ if(!state.bids[r]&&!state.results[r])continue;
+      const cards=state.rounds[r];
+      out.push(`<div><strong>Ronde ${r+1}</strong> • ${cards} kaarten</div>`);
+      if(state.bids[r]) out.push(`<div class="muted">Biedingen: ${Object.entries(state.bids[r]).map(([p,v])=>p+':'+v).join(' · ')}</div>`);
+      if(state.results[r]) out.push(`<div class="muted">Resultaat: ${Object.entries(state.results[r]).map(([p,v])=>p+':'+v).join(' · ')}</div>`);
+      if(state.points[r]) out.push(`<div class="muted">Punten: ${Object.entries(state.points[r]).map(([p,v])=>p+':' + (v>0?'+':'')+v).join(' · ')}</div>`);
+      out.push('<hr>');
+    }
+    $('history').innerHTML=out.join('');
+  }
+
+  $('nextRound').addEventListener('click', ()=>{ if(state.current>=state.rounds.length-1){alert('Spel afgelopen!');return;} state.current++; save(); $('step3').style.display='none'; $('step2').style.display='block'; renderAll(); });
+  $('exportBtn').addEventListener('click', ()=>{ const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url;a.download='chinees_poepen_export.json';a.click();URL.revokeObjectURL(url); });
+  $('resetBtn').addEventListener('click', ()=>{ if(confirm('Nieuw spel starten?')) resetAll(); });
 
   function renderAll(){ renderStep2(); renderScoreboard(); renderHistory(); }
-});
+  renderScoreboard();
+})();
 </script>
 </body>
 </html>
